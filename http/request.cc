@@ -16,7 +16,7 @@
 #include <fstream>
 #include <mutex>
 #include <algorithm>
-// #include <iostream>
+#include <iostream>
 
 // project header
 #include "server.h"
@@ -146,6 +146,7 @@ int Caching(Request& request, proxy_server::Server& server, const std::string& r
   freeaddrinfo(res);
   
   std::string cache_path = "cache/" + cache_key;
+  std::cout<< "Caching response to: " << cache_path << std::endl;
   std::ofstream cache_file(cache_path, std::ios::binary);
   cache_file << response;
   cache_file.close();

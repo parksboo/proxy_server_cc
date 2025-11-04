@@ -31,6 +31,7 @@ void Respond(int client_fd, Request& request) {
     std::string cache_key = proxy_util::cryptic_hash(request.path);
     std::string filepath = "cache/" + cache_key;
     // Check cache
+    std::cout << "Checking cache for: " << filepath << std::endl;
     if (access(filepath.c_str(), F_OK) == 0) {
       std::ifstream ifs(filepath,  std::ios::binary);
       constexpr size_t BUF_SIZE = 8192;
