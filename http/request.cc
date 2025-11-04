@@ -15,6 +15,7 @@
 #include <sstream>
 #include <fstream>
 #include <mutex>
+#include <algorithm>
 // #include <iostream>
 
 // project header
