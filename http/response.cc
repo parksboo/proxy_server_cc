@@ -23,6 +23,7 @@
 namespace proxy_http {
 
 void Respond(int client_fd, Request& request) {
+  // std::cout << "Responding to client for request path: " << request.path << std::endl;
   // serve file
   if (request.GetStatus() != StatusCode::OK) {
     return ErrorHandler(client_fd, request);
@@ -31,7 +32,7 @@ void Respond(int client_fd, Request& request) {
     std::string cache_key = proxy_util::cryptic_hash(request.path);
     std::string filepath = "cache/" + cache_key;
     // Check cache
-    std::cout << "Checking cache for: " << filepath << std::endl;
+    // std::cout << "Checking cache for: " << filepath << std::endl;
     if (access(filepath.c_str(), F_OK) == 0) {
       std::ifstream ifs(filepath,  std::ios::binary);
       constexpr size_t BUF_SIZE = 8192;
@@ -70,6 +71,9 @@ void ErrorHandler(int client_fd, Request& request) {
     case StatusCode::OK:
       status_text = "200 OK";
       break;
+    default:
+      status_text = "500 Internal Server Error";  // fallback
+      break;
     
   }
 
@@ -82,6 +86,7 @@ void ErrorHandler(int client_fd, Request& request) {
   std::string response = resp.str();
     // std::cout << resp.str() << std::endl; // Debug: Print the full response
     ::write(client_fd, response.c_str(), response.size());
+
 }
 
-}  // namespace ns_http
+}  // namespace proxy_http

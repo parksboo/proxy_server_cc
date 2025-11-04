@@ -58,16 +58,20 @@ Request Get(int client_fd, proxy_server::Server &server) {
       cache_hit = server.cache.find(cache_key) != server.cache.end();
     }
     if (cache_hit) {
-        auto& [cached_path, timestamp] = server.cache[cache_key];
-        time_t current_time = time(nullptr);
-        if (difftime(current_time, timestamp) > server.ttl) {
-            // Cache expired
-            server.cache[cache_key].second = current_time;
-            Caching(request, server, request_str);
-            return request;
-        }
+      // std::cout << "Cache hit for: " << cache_key << std::endl;
+      auto& [cached_path, timestamp] = server.cache[cache_key];
+      time_t current_time = time(nullptr);
+      if (difftime(current_time, timestamp) > server.ttl) {
+        // Cache expired
+        // std::cout << "Cache expired for: " << cache_key << std::endl;
+        server.cache[cache_key].second = current_time;
+        Caching(request, server, request_str);
+        return request;
+      }
+      else return request;
     }
     else {
+      // std::cout << "Cache miss for: " << cache_key << std::endl;
       Caching(request, server, request_str);
     return request;
     }
@@ -146,7 +150,7 @@ int Caching(Request& request, proxy_server::Server& server, const std::string& r
   freeaddrinfo(res);
   
   std::string cache_path = "cache/" + cache_key;
-  std::cout<< "Caching response to: " << cache_path << std::endl;
+  // std::cout<< "Caching response to: " << cache_path << std::endl;
   std::ofstream cache_file(cache_path, std::ios::binary);
   cache_file << response;
   cache_file.close();
