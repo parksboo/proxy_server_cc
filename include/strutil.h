@@ -2,6 +2,7 @@
 #ifndef PROXY_STRUTIL_H_
 #define PROXY_STRUTIL_H_
 
+#include <vector>
 #include <string>
 
 
