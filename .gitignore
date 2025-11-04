@@ -1,3 +1,5 @@
 /artifacts
 /cache/*
 .DS_Store
+
+proxy
