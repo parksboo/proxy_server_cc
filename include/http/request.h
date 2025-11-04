@@ -19,6 +19,7 @@ class Request {
 	std::string body;
 	std::string content_type;
     std::map<std::string, std::string> headers;
+	bool cache_update;
 	
 	Request();
 	
@@ -34,7 +35,9 @@ class Request {
 
 Request Get(int client_fd, proxy_server::Server &server);
 Request Parse(const std::string& raw, const std::vector<std::string>& block_list);
+bool CheckAndFetch(Request& request, proxy_server::Server& server, const std::string& request_str);
 int Caching(Request& request, proxy_server::Server& server, const std::string& request_str);
+void PrefetchLinks(Request& request, proxy_server::Server& server);
 
 
 }  // namespace proxy_http

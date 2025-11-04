@@ -49,7 +49,13 @@ Request Get(int client_fd, proxy_server::Server &server) {
     return request;
   }
   else {
-    // get the reponse from web server for request_str
+    request.cache_update = CheckAndFetch(request, server, request_str);
+    return request;
+  }
+}
+
+bool CheckAndFetch(Request& request, proxy_server::Server& server, const std::string& request_str) {
+  // get the reponse from web server for request_str
     std::string cache_key = proxy_util::cryptic_hash(request.path);
     bool cache_hit = false;
     // Check cache
@@ -66,16 +72,15 @@ Request Get(int client_fd, proxy_server::Server &server) {
         // std::cout << "Cache expired for: " << cache_key << std::endl;
         server.cache[cache_key].second = current_time;
         Caching(request, server, request_str);
-        return request;
+        return true;
       }
-      else return request;
+      else return false;
     }
     else {
       // std::cout << "Cache miss for: " << cache_key << std::endl;
       Caching(request, server, request_str);
-    return request;
+    return true;
     }
-  }
 }
 
 Request Parse(const std::string& raw_request, const std::vector<std::string>& block_list) {
@@ -146,6 +151,7 @@ int Caching(Request& request, proxy_server::Server& server, const std::string& r
   while ((n = read(web_fd, buf, sizeof(buf))) > 0) {
       response.append(buf, n);
   }
+
   close(web_fd);
   freeaddrinfo(res);
   
@@ -157,8 +163,32 @@ int Caching(Request& request, proxy_server::Server& server, const std::string& r
   {
       std::lock_guard<std::mutex> lock(server.cache_mutex);
       server.cache[cache_key] = {cache_path, time(nullptr)};
+      
   }
   return 0;
+}
+
+void PrefetchLinks(Request& request, proxy_server::Server& server) {
+  std::string cache_key = proxy_util::cryptic_hash(request.path);
+  std::string filepath = "cache/" + cache_key;
+  std::ifstream ifs(filepath);
+  if (!ifs.is_open()) {
+    return;
+  }
+  std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+  ifs.close();
+
+  std::vector<std::string> links = proxy_util::ExtractLinks(content);
+  for (const std::string link : links) {
+    Request prefetch_request;
+    prefetch_request.method = "GET";
+    prefetch_request.path = link;
+    prefetch_request.version = "HTTP/1.1";
+    prefetch_request.headers["Host"] = link;  // Simplified; in practice, extract host from URL
+    std::string request_str = prefetch_request.method + " " + prefetch_request.path + " " + prefetch_request.version + "\r\n" +
+                              "Host: " + prefetch_request.headers["Host"] + "\r\n\r\n";
+    CheckAndFetch(prefetch_request, server, request_str);
+  }
 }
 
 }  // namespace proxy_http
