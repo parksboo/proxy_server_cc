@@ -98,7 +98,8 @@ Request Parse(const std::string& raw_request, const std::vector<std::string>& bl
     return request.SetError(StatusCode::BAD_REQUEST);
   }
   // 403 Forbidden
-  if (std::find(block_list.begin(), block_list.end(), request.headers["Host"]) != block_list.end()) {
+  std::string host = request.headers["Host"];
+  if (std::find(block_list.begin(), block_list.end(), host) != block_list.end()) {
     return request.SetError(StatusCode::FORBIDDEN);
   }
 
