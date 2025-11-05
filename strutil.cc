@@ -43,7 +43,7 @@ std::string cryptic_hash(const std::string& s) {
 
 std::vector<std::string> ExtractLinks(const std::string& html) {
     std::vector<std::string> links;
-    std::regex url_pattern(R"((?:href|src)\s*=\s*\"(http[s]?://[^\"]+)\")");
+    std::regex url_pattern(R"((?:href|src)\s*=\s*\"([^\"]+)\")");
     std::smatch match;
     std::string::const_iterator search_start(html.cbegin());
 
