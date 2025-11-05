@@ -11,7 +11,7 @@ namespace proxy_util {
 std::string Trim(const std::string& s);
 std::string ToLower(std::string s);
 std::string cryptic_hash(const std::string& s);
-std::vector<std::string> ExtractLinks(const std::string& html);
+std::vector<std::string> ExtractLinks(const std::string& contents, const std::string& host);
 
 }  // namespace proxy_util
 

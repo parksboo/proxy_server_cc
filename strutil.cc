@@ -41,17 +41,42 @@ std::string cryptic_hash(const std::string& s) {
     return oss.str();
 }
 
-std::vector<std::string> ExtractLinks(const std::string& html) {
-    std::vector<std::string> links;
-    std::regex url_pattern(R"((?:href|src)\s*=\s*\"([^\"]+)\")");
-    std::smatch match;
-    std::string::const_iterator search_start(html.cbegin());
+std::vector<std::string> ExtractLinks(const std::string& contents, const std::string& host) {
+  std::vector<std::string> links;
+  std::regex link_pattern(R"((?:href|src)\s*=\s*["']([^"']+)["'])");
+  std::smatch match;
+  std::string::const_iterator search_start(contents.cbegin());
 
-    while (std::regex_search(search_start, html.cend(), match, url_pattern)) {
-        links.push_back(match[1]);
-        search_start = match.suffix().first;
+  while (std::regex_search(search_start, contents.cend(), match, link_pattern)) {
+    std::string link = match[1];
+    search_start = match.suffix().first;
+
+    if (link.find("https://") == 0) continue;
+    if (link.find("http://") == 0) {
+      std::regex host_re(R"(^https?:\/\/([^\/]+))");
+      std::smatch host_match;
+      if (std::regex_search(link, host_match, host_re)) {
+        std::string link_host = host_match[1];
+        if (link_host != host) continue;
+      }
+
+      size_t pos = link.find('/', link.find("//") + 2);
+      if (pos != std::string::npos) link = link.substr(pos);
+      else link = "/";
     }
-    return links;
+
+    if (link[0] != '/') {
+      if (link.rfind("./", 0) == 0)
+        link = link.substr(2);
+
+      while (link.rfind("../", 0) == 0)
+        link = link.substr(3);
+
+      link = "/" + link;
+    }
+    links.push_back(link);
+  }
+  return links;
 }
 
 }  // namespace proxy_util

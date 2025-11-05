@@ -178,17 +178,17 @@ void PrefetchLinks(Request& request, proxy_server::Server& server) {
   std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
   ifs.close();
 
-  std::vector<std::string> links = proxy_util::ExtractLinks(content);
-  for (const std::string link : links) {
+  std::vector<std::string> links = proxy_util::ExtractLinks(content, request.headers["Host"]);
+  for (const std::string& link : links) {
     Request prefetch_request;
     prefetch_request.method = "GET";
     prefetch_request.path = link;
     prefetch_request.version = "HTTP/1.1";
-    prefetch_request.headers["Host"] = request.headers["Host"];
     std::string request_str = prefetch_request.method + " " + prefetch_request.path + " " + prefetch_request.version + "\r\n" +
-                              "Host: " + prefetch_request.headers["Host"] + "\r\n\r\n";
+                              "Host: " + request.headers["Host"] + "\r\n\r\n";
     CheckAndFetch(prefetch_request, server, request_str);
   }
+  request.cache_update = false;
 }
 
 }  // namespace proxy_http
