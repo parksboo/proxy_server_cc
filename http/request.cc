@@ -184,11 +184,7 @@ void PrefetchLinks(Request& request, proxy_server::Server& server) {
     prefetch_request.method = "GET";
     prefetch_request.path = link;
     prefetch_request.version = "HTTP/1.1";
-    if (link.find("http") != 0) {
-      prefetch_request.headers["Host"] = request.headers["Host"];
-    } else {
-      prefetch_request.headers["Host"] = link; // Simplified; in practice, extract host from URL
-    }
+    prefetch_request.headers["Host"] = request.headers["Host"];
     std::string request_str = prefetch_request.method + " " + prefetch_request.path + " " + prefetch_request.version + "\r\n" +
                               "Host: " + prefetch_request.headers["Host"] + "\r\n\r\n";
     CheckAndFetch(prefetch_request, server, request_str);
