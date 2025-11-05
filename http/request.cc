@@ -17,6 +17,7 @@
 #include <mutex>
 #include <algorithm>
 #include <iostream>
+#include <thread>
 
 // project header
 #include "server.h"
@@ -70,7 +71,10 @@ bool CheckAndFetch(Request& request, proxy_server::Server& server, const std::st
       if (difftime(current_time, timestamp) > server.ttl) {
         // Cache expired
         // std::cout << "Cache expired for: " << cache_key << std::endl;
-        server.cache[cache_key].second = current_time;
+        {
+          std::lock_guard<std::mutex> lock(server.cache_mutex);
+          server.cache[cache_key].second = current_time;
+        }
         Caching(request, server, request_str);
         return true;
       }
@@ -79,7 +83,7 @@ bool CheckAndFetch(Request& request, proxy_server::Server& server, const std::st
     else {
       std::cout << "Cache path(Miss): " << request.path << "| hash: " << cache_key << std::endl;
       int result = Caching(request, server, request_str);
-      std::cout << "Caching result: " << result << " for path: " << request.path << std::endl;
+      // std::cout << "Caching result: " << result << " for path: " << request.path << std::endl;
 
     return true;
     }
@@ -182,6 +186,7 @@ void PrefetchLinks(Request& request, proxy_server::Server& server) {
   ifs.close();
 
   std::vector<std::string> links = proxy_util::ExtractLinks(content, request.headers["Host"]);
+
   for (const std::string& link : links) {
     Request prefetch_request;
     prefetch_request.method = "GET";
@@ -190,9 +195,14 @@ void PrefetchLinks(Request& request, proxy_server::Server& server) {
     prefetch_request.headers["Host"] = request.headers["Host"];
     std::string request_str = prefetch_request.method + " " + prefetch_request.path + " " + prefetch_request.version + "\r\n" +
                               "Host: " + request.headers["Host"] + "\r\n\r\n";
-    CheckAndFetch(prefetch_request, server, request_str);
+    // need to use thread
+    std::thread([prefetch_request, &server, request_str]() mutable{
+      CheckAndFetch(prefetch_request, server, request_str);
+    }).detach();
   }
+  
   request.cache_update = false;
+
 }
 
 }  // namespace proxy_http

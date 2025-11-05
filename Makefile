@@ -12,7 +12,7 @@ $(TARGET): $(SRCS)
 	$(CC) $(CFLAGS) $(INCLUDES) $(SRCS) -o $(TARGET) $(LIBS)
 
 debug:
-	$(MAKE) CFLAGS="$(CFLAGS) -g -DDEBUG"
+	$(MAKE) CFLAGS="$(CFLAGS) -g -DDEBUG -O0 -pthread -fsanitize=address -fno-omit-frame-pointer"
 
 clean:
 	rm -f $(TARGET)
