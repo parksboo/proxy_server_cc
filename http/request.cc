@@ -39,10 +39,10 @@ Request Get(int client_fd, proxy_server::Server &server) {
     ssize_t bytes_read = recv(client_fd, buf, sizeof(buf), 0);
     if (bytes_read <= 0) return Request().SetError(StatusCode::BAD_REQUEST);
     request_str.append(buf, bytes_read);
-    //  // Debug: Print received chunk
-    //   std::cout << "--- Received chunk (" << bytes_read << " bytes) ---" << std::endl;
-    //   std::cout.write(buf, bytes_read);
-    //   std::cout << "--------------------------" << std::endl;
+     // Debug: Print received chunk
+      std::cout << "--- Received chunk (" << bytes_read << " bytes) ---" << std::endl;
+      std::cout.write(buf, bytes_read);
+      std::cout << "--------------------------" << std::endl;
   }
   request = Parse(request_str, server.block_list);
   if (request.GetStatus() != StatusCode::OK) {
@@ -64,7 +64,7 @@ bool CheckAndFetch(Request& request, proxy_server::Server& server, const std::st
       cache_hit = server.cache.find(cache_key) != server.cache.end();
     }
     if (cache_hit) {
-      // std::cout << "Cache hit for: " << cache_key << std::endl;
+      std::cout << "Cache path(Hit): " << request.path << "| hash: " << cache_key << std::endl;
       auto& [cached_path, timestamp] = server.cache[cache_key];
       time_t current_time = time(nullptr);
       if (difftime(current_time, timestamp) > server.ttl) {
@@ -77,8 +77,10 @@ bool CheckAndFetch(Request& request, proxy_server::Server& server, const std::st
       else return false;
     }
     else {
-      // std::cout << "Cache miss for: " << cache_key << std::endl;
-      Caching(request, server, request_str);
+      std::cout << "Cache path(Miss): " << request.path << "| hash: " << cache_key << std::endl;
+      int result = Caching(request, server, request_str);
+      std::cout << "Caching result: " << result << " for path: " << request.path << std::endl;
+
     return true;
     }
 }
@@ -135,12 +137,14 @@ int Caching(Request& request, proxy_server::Server& server, const std::string& r
   if (web_fd == -1) { 
       freeaddrinfo(res);
       request.SetError(StatusCode::NOT_FOUND);
-      return -1;
+      return -2;
   }
   if (connect(web_fd, res->ai_addr, res->ai_addrlen) == -1) {
       freeaddrinfo(res);
       request.SetError(StatusCode::NOT_FOUND);
-      return -1;
+      std::cout << "Failed to connect to web server for: " << request.path << " Host: " << request.headers["Host"] << std::endl;
+
+      return -3;
   }
   ::write(web_fd, request_str.c_str(), request_str.size());
 
@@ -156,7 +160,6 @@ int Caching(Request& request, proxy_server::Server& server, const std::string& r
   freeaddrinfo(res);
   
   std::string cache_path = "cache/" + cache_key;
-  // std::cout<< "Caching response to: " << cache_path << std::endl;
   std::ofstream cache_file(cache_path, std::ios::binary);
   cache_file << response;
   cache_file.close();
@@ -182,8 +185,9 @@ void PrefetchLinks(Request& request, proxy_server::Server& server) {
   for (const std::string& link : links) {
     Request prefetch_request;
     prefetch_request.method = "GET";
-    prefetch_request.path = link;
+    prefetch_request.path = "http://" + request.headers["Host"] + link;
     prefetch_request.version = "HTTP/1.1";
+    prefetch_request.headers["Host"] = request.headers["Host"];
     std::string request_str = prefetch_request.method + " " + prefetch_request.path + " " + prefetch_request.version + "\r\n" +
                               "Host: " + request.headers["Host"] + "\r\n\r\n";
     CheckAndFetch(prefetch_request, server, request_str);

@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <vector>
 #include <regex>
+#include <iostream>
 
 // project header
 
@@ -76,6 +77,9 @@ std::vector<std::string> ExtractLinks(const std::string& contents, const std::st
     }
     links.push_back(link);
   }
+  // for (auto& link : links) {
+  //   std::cout << "Extracted link: " << link << std::endl;
+  // }
   return links;
 }
 
