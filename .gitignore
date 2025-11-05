@@ -1,5 +1,6 @@
 /artifacts
 /cache/*
 .DS_Store
-
+./proxy.dSYM
+proxy.tar
 proxy
